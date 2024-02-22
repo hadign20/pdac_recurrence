@@ -2,27 +2,146 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.model_selection import train_test_split
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import roc_auc_score, roc_curve, auc, confusion_matrix, classification_report
 from skfeature.function.information_theoretical_based import MRMR
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
+from sklearn.naive_bayes import GaussianNB
+from sklearn.model_selection import train_test_split, cross_val_predict, cross_val_score
+from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, precision_score, recall_score, f1_score
+from joblib import dump, load
+from sklearn.model_selection import StratifiedKFold
 
 #===========================================================
 # parameters
 #===========================================================
 excel_file_name = "../TextureFeatures_Hadi.xlsx"
+result_folder = "./results/"
 sheetName = "LiverFeatures"
 output_var_name = 'EarlyRecurrence'
 extra_columns = ['CaseNo']
 correlation_thresh = 0.8
-num_of_features = 5
+num_of_features = 10
 feature_selection_method = "MRMR"  # MRMR, PCA
-model = "RF" # RF, LR, SVM
 
+
+
+#===========================================================
+# functions
+#===========================================================
+def train_evaluate_model(classifier, x_train, y_train, x_test, y_test):
+    classifier.fit(x_train, y_train)
+    y_proba = classifier.predict_proba(x_test)[:,1]
+    auc = roc_auc_score(y_test, y_proba)
+    fpr, tpr, _ = roc_curve(y_test, y_proba)
+    return fpr, tpr, auc, y_proba
+
+
+
+def plot_roc_curve(fprs, tprs, aucs, labels):
+    plt.figure(figsize=(8,6))
+    for fpr, tpr, auc, label in zip(fprs, tprs, aucs, labels):
+        plt.plot(fpr, tpr, label='%s (AUC = %0.2f)' % (label, auc))
+    plt.plot([0, 1], [0, 1], color='gray', lw=1, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend(loc="lower right")
+    plt.savefig(result_folder + 'roc_curve_all_models.png')
+
+
+def compute_auc_ci(y_true, y_proba, n_bootstraps=1000, ci=95):
+    auc_scores = []
+    n_samples = len(y_true)
+    for _ in range(n_bootstraps):
+        indices = np.random.choice(n_samples, n_samples, replace=True)
+        y_true_bootstrap = y_true.iloc[indices]
+        y_proba_bootstrap = y_proba[indices]
+        auc = roc_auc_score(y_true_bootstrap, y_proba_bootstrap)
+        auc_scores.append(auc)
+    lower_percentile = (100 - ci) / 2
+    upper_percentile = 100 - lower_percentile
+    auc_lower = np.percentile(auc_scores, lower_percentile)
+    auc_upper = np.percentile(auc_scores, upper_percentile)
+    auc_mean = np.mean(auc_scores)
+    return auc_mean, auc_lower, auc_upper
+
+
+
+def train_evaluate_model_with_ci(classifier, x_train, y_train, x_test, y_test):
+    classifier.fit(x_train, y_train)
+    y_proba = classifier.predict_proba(x_test)[:, 1]
+    auc = roc_auc_score(y_test, y_proba)
+    lower_bound, upper_bound = compute_auc_ci(y_test, y_proba)
+    fpr, tpr, _ = roc_curve(y_test, y_proba)
+    return fpr, tpr, auc, lower_bound, upper_bound
+
+def plot_roc_curve_with_ci(fprs, tprs, aucs, lower_bounds, upper_bounds, labels):
+    plt.figure(figsize=(8, 6))
+    for fpr, tpr, auc, lb, ub, label in zip(fprs, tprs, aucs, lower_bounds, upper_bounds, labels):
+        plt.plot(fpr, tpr, label='%s (AUC = %0.2f [CI %0.2f-%0.2f])' % (label, auc, lb, ub))
+    plt.plot([0, 1], [0, 1], color='gray', lw=1, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend(loc="lower right")
+    plt.savefig(result_folder + 'roc_curve_all_models_with_ci.png')
+
+
+
+def plot_feature_importance(classifier, feature_names, classifier_name):
+    if hasattr(classifier, 'feature_importances_'):
+        feature_importances = classifier.feature_importances_
+        plt.figure(figsize=(10, 6))
+        plt.barh(feature_names, feature_importances)
+        plt.xlabel('Feature Importance')
+        plt.ylabel('Feature')
+        plt.title(f'Feature Importance - {classifier_name}')
+        plt.savefig(f'feature_importance_{classifier_name}.png')
+
+    elif hasattr(classifier, 'coef_'):
+        feature_importances = classifier.coef_[0]
+        plt.figure(figsize=(10, 6))
+        plt.barh(feature_names, feature_importances)
+        plt.xlabel('Coefficient Value')
+        plt.ylabel('Feature')
+        plt.title(f'Feature Importance - {classifier_name}')
+        plt.savefig(f'feature_importance_{classifier_name}.png')
+        plt.show()
+
+    else:
+        print(f"Feature importances not available for {classifier_name}.")
+
+
+def save_metrics_table(metrics_dict, filename):
+    df = pd.DataFrame(metrics_dict)
+    df.to_csv(filename, index=False)
+
+
+
+# Function to compute metrics
+# Function to compute metrics
+def compute_metrics(y_true, y_pred):
+    cm = confusion_matrix(y_true, y_pred)
+    tn, fp, fn, tp = cm.ravel()
+    sensitivity = recall_score(y_true, y_pred)
+    specificity = tn / (tn + fp) if (tn + fp) else 0
+    ppv = precision_score(y_true, y_pred)
+    npv = tn / (tn + fn) if (tn + fn) else 0
+    return cm, sensitivity, specificity, ppv, npv
+
+# Function to cross-validate and compute metrics
+def cross_validate_metrics(classifier, x_train, y_train):
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    y_pred_train = cross_val_predict(classifier, x_train, y_train, cv=cv)
+    cm_train, sensitivity_train, specificity_train, ppv_train, npv_train = compute_metrics(y_train, y_pred_train)
+    return cm_train, sensitivity_train, specificity_train, ppv_train, npv_train
 
 #===========================================================
 # preprocessing
@@ -77,168 +196,105 @@ else:
     print("wrong feature selection method...")
 
 
+
+
+
 #===========================================================
 # model building
 #===========================================================
-if model == "RF":
-    # Train Random Forest classifier
-    rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-    rf_classifier.fit(x_train, y_train)
 
-    # Predict on test set
-    y_pred_rf = rf_classifier.predict(x_test)
-    y_proba_rf = rf_classifier.predict_proba(x_test)[:, 1]
-
-    # Compute AUC
-    auc_rf = roc_auc_score(y_test, y_proba_rf)
-
-    # Compute ROC curve
-    fpr_rf, tpr_rf, _ = roc_curve(y_test, y_proba_rf)
-
-    # Compute confusion matrix
-    cm_rf = confusion_matrix(y_test, y_pred_rf)
-
-    # Compute sensitivity and specificity
-    tn, fp, fn, tp = cm_rf.ravel()
-    sensitivity_logreg = tp / (tp + fn) if (tp + fn) else 0
-    specificity_logreg = tn / (tn + fp) if (tn + fp) else 0
-    ppv_logreg = tp / (tp + fp) if (tp + fp) else 0
-    npv_logreg = tn / (tn + fn) if (tn + fn) else 0
+# Define classifiers
+logreg_classifier = LogisticRegression(max_iter=1000, random_state=42)
+rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
+svm_classifier = SVC(probability=True, random_state=42)
+nb_classifier = GaussianNB()
 
 
-    # Plot ROC curve
-    plt.figure(figsize=(8, 6))
-    plt.plot(fpr_rf, tpr_rf, color='blue', lw=2, label='ROC curve (AUC = %0.2f)' % auc_rf)
-    plt.plot([0, 1], [0, 1], color='gray', lw=1, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic (ROC) Curve')
-    plt.legend(loc="lower right")
-    plt.show()
-    plt.savefig('results/roc_curve_rf.png')
+# Train and evaluate models
+classifiers = [logreg_classifier, rf_classifier, svm_classifier, nb_classifier]
+labels = ['Logistic Regression', 'Random Forest', 'SVM', 'Naive Bayes']
+fprs = []
+tprs = []
+aucs = []
+y_probas = []
+for classifier, label in zip(classifiers, labels):
+    fpr, tpr, auc, y_proba = train_evaluate_model(classifier, x_train, y_train, x_test, y_test)
+    fprs.append(fpr)
+    tprs.append(tpr)
+    aucs.append(auc)
+    y_probas.append(y_proba)
 
-
-
-    # Get feature importances
-    feature_importances_rf = rf_classifier.feature_importances_
-
-    plt.figure(figsize=(10, 6))
-    plt.barh(x_train.columns, feature_importances_rf)
-    plt.xlabel('Feature Importance')
-    plt.ylabel('Feature')
-    plt.title('Feature Importance - Random Forest')
-    plt.show()
-    plt.savefig('results/feature_importance_rf.png')
-
-
-
-elif model == "LR":
-    # Train Logistic Regression classifier
-    logreg_classifier = LogisticRegression(max_iter=1000, random_state=42)
-    logreg_classifier.fit(x_train, y_train)
-
-    # Predict on test set
-    y_pred_logreg = logreg_classifier.predict(x_test)
-    y_proba_logreg = logreg_classifier.predict_proba(x_test)[:, 1]
-
-    # Compute AUC
-    auc_logreg = roc_auc_score(y_test, y_proba_logreg)
-
-    # Compute ROC curve
-    fpr_logreg, tpr_logreg, _ = roc_curve(y_test, y_proba_logreg)
-
-    # Compute confusion matrix
-    cm_logreg = confusion_matrix(y_test, y_pred_logreg)
-
-    # Compute sensitivity and specificity
-    tn, fp, fn, tp = cm_logreg.ravel()
-    sensitivity_logreg = tp / (tp + fn) if (tp + fn) else 0
-    specificity_logreg = tn / (tn + fp) if (tn + fp) else 0
-    ppv_logreg = tp / (tp + fp) if (tp + fp) else 0
-    npv_logreg = tn / (tn + fn) if (tn + fn) else 0
-
-    # Plot ROC curve
-    plt.figure(figsize=(8, 6))
-    plt.plot(fpr_logreg, tpr_logreg, color='blue', lw=2, label='ROC curve (AUC = %0.2f)' % auc_logreg)
-    plt.plot([0, 1], [0, 1], color='gray', lw=1, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic (ROC) Curve - Logistic Regression')
-    plt.legend(loc="lower right")
-
-    # Save ROC curve plot
-    plt.savefig('results/roc_curve_lr.png')
-
-
-    # Get feature importances
-    feature_importances_lr = logreg_classifier.feature_importances_
-
-    plt.figure(figsize=(10, 6))
-    plt.barh(x_train.columns, feature_importances_lr)
-    plt.xlabel('Feature Importance')
-    plt.ylabel('Feature')
-    plt.title('Feature Importance - Logistic Regression')
-    plt.show()
-    plt.savefig('results/feature_importance_lr.png')
+# Plot ROC curves for all models
+plot_roc_curve(fprs, tprs, aucs, labels)
 
 
 
 
-elif model == "SVM":
-    # Train SVM classifier
-    svm_classifier = SVC(probability=True, random_state=42)
-    svm_classifier.fit(x_train, y_train)
-
-    # Predict on test set
-    y_pred_svm = svm_classifier.predict(x_test)
-    y_proba_svm = svm_classifier.predict_proba(x_test)[:, 1]
-
-    # Compute AUC
-    auc_svm = roc_auc_score(y_test, y_proba_svm)
-
-    # Compute ROC curve
-    fpr_svm, tpr_svm, _ = roc_curve(y_test, y_proba_svm)
-
-    # Compute confusion matrix
-    cm_svm = confusion_matrix(y_test, y_pred_svm)
-
-    # Compute sensitivity and specificity
-    tn, fp, fn, tp = cm_svm.ravel()
-    sensitivity_logreg = tp / (tp + fn) if (tp + fn) else 0
-    specificity_logreg = tn / (tn + fp) if (tn + fp) else 0
-    ppv_logreg = tp / (tp + fp) if (tp + fp) else 0
-    npv_logreg = tn / (tn + fn) if (tn + fn) else 0
-
-    # Plot ROC curve
-    plt.figure(figsize=(8, 6))
-    plt.plot(fpr_svm, tpr_svm, color='blue', lw=2, label='ROC curve (AUC = %0.2f)' % auc_svm)
-    plt.plot([0, 1], [0, 1], color='gray', lw=1, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic (ROC) Curve - SVM')
-    plt.legend(loc="lower right")
-
-    # Save ROC curve plot
-    plt.savefig('results/roc_curve_svm.png')
-
-    # Get feature importances
-    feature_importances_svm = svm_classifier.feature_importances_
-
-    plt.figure(figsize=(10, 6))
-    plt.barh(x_train.columns, feature_importances_svm)
-    plt.xlabel('Feature Importance')
-    plt.ylabel('Feature')
-    plt.title('Feature Importance - SVM')
-    plt.show()
-    plt.savefig('results/feature_importances_svm.png')
 
 
+# Compute metrics for train data
+cms_train = []
+sensitivities_train = []
+specificities_train = []
+ppvs_train = []
+npvs_train = []
+aucs_train = []
+for classifier, label in zip(classifiers, labels):
+    cm_train, sensitivity_train, specificity_train, ppv_train, npv_train = cross_validate_metrics(classifier, x_train, y_train)
+    auc_train = np.mean(cross_val_score(classifier, x_train, y_train, cv=5, scoring='roc_auc'))
+    cms_train.append(cm_train)
+    sensitivities_train.append(sensitivity_train)
+    specificities_train.append(specificity_train)
+    ppvs_train.append(ppv_train)
+    npvs_train.append(npv_train)
+    aucs_train.append(auc_train)
 
-else:
-    print("wrong model selected..")
+# Compute metrics for test data
+cms_test = []
+sensitivities_test = []
+specificities_test = []
+ppvs_test = []
+npvs_test = []
+aucs_test = []
+for classifier, label in zip(classifiers, labels):
+    classifier.fit(x_train, y_train)
+    y_pred_test = classifier.predict(x_test)
+    cm_test, sensitivity_test, specificity_test, ppv_test, npv_test = compute_metrics(y_test, y_pred_test)
+    auc_test = roc_auc_score(y_test, classifier.predict_proba(x_test)[:, 1])
+    cms_test.append(cm_test)
+    sensitivities_test.append(sensitivity_test)
+    specificities_test.append(specificity_test)
+    ppvs_test.append(ppv_test)
+    npvs_test.append(npv_test)
+    aucs_test.append(auc_test)
+
+# Create and save metrics table
+table_data = {
+    'Model': labels,
+    'AUC Train': ["{:.2f} ({:.2f}-{:.2f})".format(auc, np.percentile(auc_list, 2.5), np.percentile(auc_list, 97.5)) for auc, auc_list in zip(aucs_train, aucs_train)],
+    'AUC Test': ["{:.2f} ({:.2f}-{:.2f})".format(auc, np.percentile(auc_list, 2.5), np.percentile(auc_list, 97.5)) for auc, auc_list in zip(aucs_test, aucs_test)],
+    'Sensitivity Train': sensitivities_train,
+    'Sensitivity Test': sensitivities_test,
+    'Specificity Train': specificities_train,
+    'Specificity Test': specificities_test,
+    'PPV Train': ppvs_train,
+    'PPV Test': ppvs_test,
+    'NPV Train': npvs_train,
+    'NPV Test': npvs_test
+}
+df_table = pd.DataFrame(table_data)
+df_table.to_csv('metrics_table.csv', index=False)
+
+
+
+# Save models
+dump(logreg_classifier, 'logreg_model.joblib')
+dump(rf_classifier, 'rf_model.joblib')
+dump(svm_classifier, 'svm_model.joblib')
+dump(nb_classifier, 'nb_model.joblib')
+
+# Plot feature importance for Random Forest classifier
+plot_feature_importance(rf_classifier, x_train.columns, 'Random Forest')
+plot_feature_importance(svm_classifier, x_train.columns, 'SVM')
+plot_feature_importance(logreg_classifier, x_train.columns, 'Logistic Regression')
+plot_feature_importance(nb_classifier, x_train.columns, 'Naive Bayes')
