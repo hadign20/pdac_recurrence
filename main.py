@@ -1,300 +1,266 @@
+import os
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.feature_selection import SelectKBest, mutual_info_classif
-from sklearn.ensemble import RandomForestClassifier
-from skfeature.function.information_theoretical_based import MRMR
-from sklearn.decomposition import PCA
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
-from sklearn.naive_bayes import GaussianNB
-from sklearn.model_selection import train_test_split, cross_val_predict, cross_val_score
-from sklearn.metrics import roc_auc_score, roc_curve, confusion_matrix, precision_score, recall_score, f1_score
-from joblib import dump, load
-from sklearn.model_selection import StratifiedKFold
-
-#===========================================================
-# parameters
-#===========================================================
-excel_file_name = "../TextureFeatures_Hadi.xlsx"
-result_folder = "./results/"
-sheetName = "LiverFeatures"
-output_var_name = 'EarlyRecurrence'
-extra_columns = ['CaseNo']
-correlation_thresh = 0.8
-num_of_features = 10
-feature_selection_method = "MRMR"  # MRMR, PCA
+from src.feature_selection.correlation import remove_collinear_features
+from src.feature_selection.feature_selection import *
+from src.model.model_building import evaluate_models, save_classification_results
 
 
 
-#===========================================================
-# functions
-#===========================================================
-def train_evaluate_model(classifier, x_train, y_train, x_test, y_test):
-    classifier.fit(x_train, y_train)
-    y_proba = classifier.predict_proba(x_test)[:,1]
-    auc = roc_auc_score(y_test, y_proba)
-    fpr, tpr, _ = roc_curve(y_test, y_proba)
-    return fpr, tpr, auc, y_proba
+#=========================================
+# set paths
+#=========================================
+data_path = r'D:\projects\colonMSI\data'
+result_path = r'./results'
+img_data_path = os.path.join(data_path, "Segmentations")
+excel_file_name = "TumorTexture"
+SELECTED_SHEET = "all" #"2_1"
+outcome_column = "Outcome"
+exclude_columns = ["Case"]
+categorical_columns = []
+
+
+features_file = os.path.join(data_path, excel_file_name + ".xlsx")
+results_dir = os.path.join(result_path, excel_file_name)
+os.makedirs(results_dir, exist_ok=True)
+
+#=========================================
+# set parameters
+#=========================================
+FEATURE_CORRELATION = True
+CORR_THRESH = 0.8
+
+FEATURE_SELECTION = True
+FEATURE_SELECTION_METHOD = 'composite' # 'mrmr', 'pvalue', 'auc', 'composite'
+min_num_features = 1
+max_num_features = 20
+
+MODEL_BUILDING = True
+EVALUATION_METHOD = 'cross_validation' # 'train_test_split' or 'cross_validation'
+TEST_SIZE = 0.3
+CV_FOLDS = 5
+HYPERPARAMETER_TUNING = True
 
 
 
-def plot_roc_curve(fprs, tprs, aucs, labels):
-    plt.figure(figsize=(8,6))
-    for fpr, tpr, auc, label in zip(fprs, tprs, aucs, labels):
-        plt.plot(fpr, tpr, label='%s (AUC = %0.2f)' % (label, auc))
-    plt.plot([0, 1], [0, 1], color='gray', lw=1, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic (ROC) Curve')
-    plt.legend(loc="lower right")
-    plt.savefig(result_folder + 'roc_curve_all_models.png')
+
+#=========================================
+def save_excel_sheet(df, filepath, sheetname, index=False):
+    # Create file if it does not exist
+    if not os.path.exists(filepath):
+        df.to_excel(filepath, sheet_name=sheetname, index=index)
+
+    # Otherwise, add a sheet. Overwrite if there exists one with the same name.
+    else:
+        with pd.ExcelWriter(filepath, engine='openpyxl', if_sheet_exists='replace', mode='a') as writer:
+            df.to_excel(writer, sheet_name=sheetname, index=index)
+#=========================================
 
 
-def compute_auc_ci(y_true, y_proba, n_bootstraps=1000, ci=95):
-    auc_scores = []
-    n_samples = len(y_true)
-    for _ in range(n_bootstraps):
-        indices = np.random.choice(n_samples, n_samples, replace=True)
-        y_true_bootstrap = y_true.iloc[indices]
-        y_proba_bootstrap = y_proba[indices]
-        auc = roc_auc_score(y_true_bootstrap, y_proba_bootstrap)
-        auc_scores.append(auc)
-    lower_percentile = (100 - ci) / 2
-    upper_percentile = 100 - lower_percentile
-    auc_lower = np.percentile(auc_scores, lower_percentile)
-    auc_upper = np.percentile(auc_scores, upper_percentile)
-    auc_mean = np.mean(auc_scores)
-    return auc_mean, auc_lower, auc_upper
+def main():
+    xls = pd.ExcelFile(features_file)
+    summary_results = []
+    best_result = None
 
 
+    if SELECTED_SHEET == "all":
+        for selected_sheet in xls.sheet_names:
+            result_dir = os.path.join(results_dir, selected_sheet)
+            os.makedirs(result_dir, exist_ok=True)
 
-def train_evaluate_model_with_ci(classifier, x_train, y_train, x_test, y_test):
-    classifier.fit(x_train, y_train)
-    y_proba = classifier.predict_proba(x_test)[:, 1]
-    auc = roc_auc_score(y_test, y_proba)
-    lower_bound, upper_bound = compute_auc_ci(y_test, y_proba)
-    fpr, tpr, _ = roc_curve(y_test, y_proba)
-    return fpr, tpr, auc, lower_bound, upper_bound
+            df = pd.read_excel(xls, sheet_name=selected_sheet)
 
-def plot_roc_curve_with_ci(fprs, tprs, aucs, lower_bounds, upper_bounds, labels):
-    plt.figure(figsize=(8, 6))
-    for fpr, tpr, auc, lb, ub, label in zip(fprs, tprs, aucs, lower_bounds, upper_bounds, labels):
-        plt.plot(fpr, tpr, label='%s (AUC = %0.2f [CI %0.2f-%0.2f])' % (label, auc, lb, ub))
-    plt.plot([0, 1], [0, 1], color='gray', lw=1, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic (ROC) Curve')
-    plt.legend(loc="lower right")
-    plt.savefig(result_folder + 'roc_curve_all_models_with_ci.png')
+            # =========================================
+            # Feature selection
+            # =========================================
+            if FEATURE_CORRELATION:
+                print("\n======================================================================")
+                print(f"Removing correlated features for sheet {selected_sheet}")
+                print("======================================================================")
+                df = remove_collinear_features(df, CORR_THRESH)
 
+            if FEATURE_SELECTION:
+                print("\n======================================================================")
+                print(f"Performing feature analysis for sheet {selected_sheet}")
+                print("======================================================================")
+                p_values_df = calculate_p_values(df, outcome_column, categorical_columns, exclude_columns)
+                auc_values_df = calculate_auc_values(df, outcome_column, categorical_columns, exclude_columns)
+                mrmr_df = MRMR_feature_count(df, outcome_column, categorical_columns, exclude_columns, max_num_features, CV_FOLDS)
+                composite_df = calculate_feature_scores(p_values_df, auc_values_df, mrmr_df, result_dir)
 
+                save_feature_analysis(p_values_df, auc_values_df, mrmr_df, composite_df, result_dir)
 
-def plot_feature_importance(classifier, feature_names, classifier_name):
-    if hasattr(classifier, 'feature_importances_'):
-        feature_importances = classifier.feature_importances_
-        plt.figure(figsize=(10, 6))
-        plt.barh(feature_names, feature_importances)
-        plt.xlabel('Feature Importance')
-        plt.ylabel('Feature')
-        plt.title(f'Feature Importance - {classifier_name}')
-        plt.savefig(f'feature_importance_{classifier_name}.png')
+                df_copy = df.copy()
 
-    elif hasattr(classifier, 'coef_'):
-        feature_importances = classifier.coef_[0]
-        plt.figure(figsize=(10, 6))
-        plt.barh(feature_names, feature_importances)
-        plt.xlabel('Coefficient Value')
-        plt.ylabel('Feature')
-        plt.title(f'Feature Importance - {classifier_name}')
-        plt.savefig(f'feature_importance_{classifier_name}.png')
-        plt.show()
+                for num_features in range(min_num_features, max_num_features + 1):
+                    print("\n======================================================================")
+                    print(f"Selecting {num_features} significant features for sheet {selected_sheet}")
+                    print("======================================================================")
+
+                    selected_features = []
+                    if FEATURE_SELECTION_METHOD == 'mrmr':
+                        selected_features = mrmr_df['Feature'][:num_features].tolist()
+                        print(f"{num_features} features were selected by using MRMR method")
+                    elif FEATURE_SELECTION_METHOD == 'pvalue':
+                        selected_features = p_values_df['Feature'][:num_features].tolist()
+                        print(f"{num_features} features were selected by using pvalue method")
+                    elif FEATURE_SELECTION_METHOD == 'auc':
+                        selected_features = auc_values_df['Feature'][:num_features].tolist()
+                        print(f"{num_features} features were selected by using auc method")
+                    elif FEATURE_SELECTION_METHOD == 'composite':
+                        selected_features = composite_df['Feature'][:num_features].tolist()
+                        print(f"{num_features} features were selected by a composite of p_value, AUC, and MRMR method")
+                    else:
+                        raise ValueError("FEATURE_SELECTION_METHOD is not correct. It should be 'mrmr', 'pvalue', 'auc', or 'composite'")
+
+                    df = df_copy[exclude_columns + selected_features + [outcome_column]]
+
+                    # =========================================
+                    # Model building and evaluation
+                    # =========================================
+                    if MODEL_BUILDING:
+                        eval_kwargs = {'test_size': TEST_SIZE,
+                                       'random_state': 42} if EVALUATION_METHOD == 'train_test_split' else {'cv_folds': CV_FOLDS}
+
+                        print("\n======================================================================")
+                        print(f"Training and evaluating classification models for {num_features} feature(s) in sheet {selected_sheet}")
+                        print("======================================================================")
+                        X = df.loc[:, ~df.columns.isin(exclude_columns + [outcome_column])]
+                        y = df[outcome_column]
+
+                        classification_results = evaluate_models(X, y, method=EVALUATION_METHOD, **eval_kwargs)
+
+                        classification_results_file = os.path.join(result_dir, 'model_evaluation_results.xlsx')
+                        save_classification_results(classification_results, classification_results_file, num_features, method=EVALUATION_METHOD)
+
+                        # Record summary results
+                        for classifier, result in classification_results.items():
+                            result_entry = {
+                                'Sheet': selected_sheet,
+                                'Num Features': num_features,
+                                'Classifier': classifier,
+                                'AUC': result['metrics']['roc_auc'],
+                                'Sensitivity': result['metrics']['sensitivity'],
+                                'Specificity': result['metrics']['specificity'],
+                                'PPV': result['metrics']['ppv'],
+                                'NPV': result['metrics']['npv']
+                            }
+                            summary_results.append(result_entry)
+                            if best_result is None or result['metrics']['roc_auc'] > best_result['AUC']:
+                                best_result = result_entry
+
+        # Save summary results
+        summary_df = pd.DataFrame(summary_results)
+        summary_file = os.path.join(results_dir, 'summary_results.xlsx')
+        with pd.ExcelWriter(summary_file, engine='openpyxl') as writer:
+            for sheet_name in summary_df['Sheet'].unique():
+                sheet_df = summary_df[summary_df['Sheet'] == sheet_name]
+                sheet_df.to_excel(writer, sheet_name=sheet_name, index=False)
+            if best_result:
+                best_df = pd.DataFrame([best_result])
+                best_df.to_excel(writer, sheet_name='Best Result', index=False)
 
     else:
-        print(f"Feature importances not available for {classifier_name}.")
+        result_dir = os.path.join(results_dir, SELECTED_SHEET)
+        os.makedirs(result_dir, exist_ok=True)
+
+        df = pd.read_excel(xls, sheet_name=SELECTED_SHEET)
+
+        # =========================================
+        # Feature selection
+        # =========================================
+        if FEATURE_CORRELATION:
+            print("\n======================================================================")
+            print(f"Removing correlated features for sheet {SELECTED_SHEET}")
+            print("======================================================================")
+            df = remove_collinear_features(df, CORR_THRESH)
+
+        if FEATURE_SELECTION:
+            print("\n======================================================================")
+            print(f"Performing feature analysis for sheet {SELECTED_SHEET}")
+            print("======================================================================")
+            p_values_df = calculate_p_values(df, outcome_column, categorical_columns, exclude_columns)
+            auc_values_df = calculate_auc_values(df, outcome_column, categorical_columns, exclude_columns)
+            mrmr_df = MRMR_feature_count(df, outcome_column, categorical_columns, exclude_columns, max_num_features,
+                                         CV_FOLDS)
+            composite_df = calculate_feature_scores(p_values_df, auc_values_df, mrmr_df, result_dir)
+
+            save_feature_analysis(p_values_df, auc_values_df, mrmr_df, composite_df, result_dir)
+
+            df_copy = df.copy()
+
+            for num_features in range(min_num_features, max_num_features + 1):
+                print("\n======================================================================")
+                print(f"Selecting {num_features} significant features for sheet {SELECTED_SHEET}")
+                print("======================================================================")
+
+                selected_features = []
+                if FEATURE_SELECTION_METHOD == 'mrmr':
+                    selected_features = mrmr_df['Feature'][:num_features].tolist()
+                    print(f"{num_features} features were selected by using MRMR method")
+                elif FEATURE_SELECTION_METHOD == 'pvalue':
+                    selected_features = p_values_df['Feature'][:num_features].tolist()
+                    print(f"{num_features} features were selected by using pvalue method")
+                elif FEATURE_SELECTION_METHOD == 'auc':
+                    selected_features = auc_values_df['Feature'][:num_features].tolist()
+                    print(f"{num_features} features were selected by using auc method")
+                elif FEATURE_SELECTION_METHOD == 'composite':
+                    selected_features = composite_df['Feature'][:num_features].tolist()
+                    print(f"{num_features} features were selected by a composite of p_value, AUC, and MRMR method")
+                else:
+                    raise ValueError(
+                        "FEATURE_SELECTION_METHOD is not correct. It should be 'mrmr', 'pvalue', 'auc', or 'composite'")
+
+                df = df_copy[exclude_columns + selected_features + [outcome_column]]
+
+                # =========================================
+                # Model building and evaluation
+                # =========================================
+                if MODEL_BUILDING:
+                    eval_kwargs = {'test_size': TEST_SIZE,
+                                   'random_state': 42} if EVALUATION_METHOD == 'train_test_split' else {
+                        'cv_folds': CV_FOLDS}
+
+                    print("\n======================================================================")
+                    print(f"Training and evaluating classification models for {num_features} feature(s) in sheet {SELECTED_SHEET}")
+                    print("======================================================================")
+                    X = df.loc[:, ~df.columns.isin(exclude_columns + [outcome_column])]
+                    y = df[outcome_column]
+
+                    classification_results = evaluate_models(X, y, method=EVALUATION_METHOD, **eval_kwargs)
+
+                    classification_results_file = os.path.join(result_dir, 'model_evaluation_results.xlsx')
+                    save_classification_results(classification_results, classification_results_file, num_features,
+                                                method=EVALUATION_METHOD)
+
+                    # Record summary results
+                    for classifier, result in classification_results.items():
+                        result_entry = {
+                            'Sheet': SELECTED_SHEET,
+                            'Num Features': num_features,
+                            'Classifier': classifier,
+                            'AUC': result['metrics']['roc_auc'],
+                            'Sensitivity': result['metrics']['sensitivity'],
+                            'Specificity': result['metrics']['specificity'],
+                            'PPV': result['metrics']['ppv'],
+                            'NPV': result['metrics']['npv']
+                        }
+                        summary_results.append(result_entry)
+                        if best_result is None or result['metrics']['roc_auc'] > best_result['AUC']:
+                            best_result = result_entry
+
+        # Save summary results
+    summary_df = pd.DataFrame(summary_results)
+    summary_file = os.path.join(results_dir, 'summary_results.xlsx')
+    with pd.ExcelWriter(summary_file, engine='openpyxl') as writer:
+        for sheet_name in summary_df['Sheet'].unique():
+            sheet_df = summary_df[summary_df['Sheet'] == sheet_name]
+            sheet_df.to_excel(writer, sheet_name=sheet_name, index=False)
+        if best_result:
+            best_df = pd.DataFrame([best_result])
+            best_df.to_excel(writer, sheet_name='Best Result', index=False)
 
 
-def save_metrics_table(metrics_dict, filename):
-    df = pd.DataFrame(metrics_dict)
-    df.to_csv(filename, index=False)
+if __name__ == '__main__':
+    main()
 
-
-
-# Function to compute metrics
-# Function to compute metrics
-def compute_metrics(y_true, y_pred):
-    cm = confusion_matrix(y_true, y_pred)
-    tn, fp, fn, tp = cm.ravel()
-    sensitivity = recall_score(y_true, y_pred)
-    specificity = tn / (tn + fp) if (tn + fp) else 0
-    ppv = precision_score(y_true, y_pred)
-    npv = tn / (tn + fn) if (tn + fn) else 0
-    return cm, sensitivity, specificity, ppv, npv
-
-# Function to cross-validate and compute metrics
-def cross_validate_metrics(classifier, x_train, y_train):
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    y_pred_train = cross_val_predict(classifier, x_train, y_train, cv=cv)
-    cm_train, sensitivity_train, specificity_train, ppv_train, npv_train = compute_metrics(y_train, y_pred_train)
-    return cm_train, sensitivity_train, specificity_train, ppv_train, npv_train
-
-#===========================================================
-# preprocessing
-#===========================================================
-df = pd.read_excel(excel_file_name, sheet_name=sheetName)
-df.drop(columns=extra_columns, inplace=True)
-
-
-#===========================================================
-# train test split
-#===========================================================
-x = df.drop(columns=[output_var_name])
-y = df[output_var_name]
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.3, random_state=42)
-
-
-#===========================================================
-# remove correlated features
-#===========================================================
-corr_matrix = x_train.corr().abs()
-upper_tri = corr_matrix.where(np.triu(np.ones_like(corr_matrix, dtype=bool), k=1))
-highly_correlated_cols = [column for column in upper_tri.columns if any(upper_tri[column] > correlation_thresh)]
-
-x_train.drop(columns=highly_correlated_cols, inplace=True)
-x_test.drop(columns=highly_correlated_cols, inplace=True)
-
-
-#===========================================================
-# feature selection
-#===========================================================
-if feature_selection_method == "MRMR":
-    # Selects features using MRMR (Minimum Redundancy Maximum Relevance).
-    selected_features = MRMR.mrmr(x_train.values, y_train.values, mode="index", n_selected_features=num_of_features)
-    x_train = x_train.iloc[:, selected_features]
-    x_test = x_test.iloc[:, selected_features]
-
-elif feature_selection_method == "PCA":
-    # Selects features using PCA (Principal Component Analysis).
-    pca = PCA(n_components=num_of_features)
-    pca.fit(x_train)
-    x_train = pca.transform(x_train)
-    x_test = pca.transform(x_test)
-
-    # Transforming back to original feature space
-    selected_feature_indices = np.abs(pca.components_).argsort()[-num_of_features:][::-1]
-    selected_feature_names = x.columns[selected_feature_indices]
-
-    x_train = pd.DataFrame(x_train, columns=selected_feature_names)
-    x_test = pd.DataFrame(x_test, columns=selected_feature_names)
-
-else:
-    print("wrong feature selection method...")
-
-
-
-
-
-#===========================================================
-# model building
-#===========================================================
-
-# Define classifiers
-logreg_classifier = LogisticRegression(max_iter=1000, random_state=42)
-rf_classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-svm_classifier = SVC(probability=True, random_state=42)
-nb_classifier = GaussianNB()
-
-
-# Train and evaluate models
-classifiers = [logreg_classifier, rf_classifier, svm_classifier, nb_classifier]
-labels = ['Logistic Regression', 'Random Forest', 'SVM', 'Naive Bayes']
-fprs = []
-tprs = []
-aucs = []
-y_probas = []
-for classifier, label in zip(classifiers, labels):
-    fpr, tpr, auc, y_proba = train_evaluate_model(classifier, x_train, y_train, x_test, y_test)
-    fprs.append(fpr)
-    tprs.append(tpr)
-    aucs.append(auc)
-    y_probas.append(y_proba)
-
-# Plot ROC curves for all models
-plot_roc_curve(fprs, tprs, aucs, labels)
-
-
-
-
-
-
-# Compute metrics for train data
-cms_train = []
-sensitivities_train = []
-specificities_train = []
-ppvs_train = []
-npvs_train = []
-aucs_train = []
-for classifier, label in zip(classifiers, labels):
-    cm_train, sensitivity_train, specificity_train, ppv_train, npv_train = cross_validate_metrics(classifier, x_train, y_train)
-    auc_train = np.mean(cross_val_score(classifier, x_train, y_train, cv=5, scoring='roc_auc'))
-    cms_train.append(cm_train)
-    sensitivities_train.append(sensitivity_train)
-    specificities_train.append(specificity_train)
-    ppvs_train.append(ppv_train)
-    npvs_train.append(npv_train)
-    aucs_train.append(auc_train)
-
-# Compute metrics for test data
-cms_test = []
-sensitivities_test = []
-specificities_test = []
-ppvs_test = []
-npvs_test = []
-aucs_test = []
-for classifier, label in zip(classifiers, labels):
-    classifier.fit(x_train, y_train)
-    y_pred_test = classifier.predict(x_test)
-    cm_test, sensitivity_test, specificity_test, ppv_test, npv_test = compute_metrics(y_test, y_pred_test)
-    auc_test = roc_auc_score(y_test, classifier.predict_proba(x_test)[:, 1])
-    cms_test.append(cm_test)
-    sensitivities_test.append(sensitivity_test)
-    specificities_test.append(specificity_test)
-    ppvs_test.append(ppv_test)
-    npvs_test.append(npv_test)
-    aucs_test.append(auc_test)
-
-# Create and save metrics table
-table_data = {
-    'Model': labels,
-    'AUC Train': ["{:.2f} ({:.2f}-{:.2f})".format(auc, np.percentile(auc_list, 2.5), np.percentile(auc_list, 97.5)) for auc, auc_list in zip(aucs_train, aucs_train)],
-    'AUC Test': ["{:.2f} ({:.2f}-{:.2f})".format(auc, np.percentile(auc_list, 2.5), np.percentile(auc_list, 97.5)) for auc, auc_list in zip(aucs_test, aucs_test)],
-    'Sensitivity Train': sensitivities_train,
-    'Sensitivity Test': sensitivities_test,
-    'Specificity Train': specificities_train,
-    'Specificity Test': specificities_test,
-    'PPV Train': ppvs_train,
-    'PPV Test': ppvs_test,
-    'NPV Train': npvs_train,
-    'NPV Test': npvs_test
-}
-df_table = pd.DataFrame(table_data)
-df_table.to_csv('metrics_table.csv', index=False)
-
-
-
-# Save models
-dump(logreg_classifier, 'logreg_model.joblib')
-dump(rf_classifier, 'rf_model.joblib')
-dump(svm_classifier, 'svm_model.joblib')
-dump(nb_classifier, 'nb_model.joblib')
-
-# Plot feature importance for Random Forest classifier
-plot_feature_importance(rf_classifier, x_train.columns, 'Random Forest')
-plot_feature_importance(svm_classifier, x_train.columns, 'SVM')
-plot_feature_importance(logreg_classifier, x_train.columns, 'Logistic Regression')
-plot_feature_importance(nb_classifier, x_train.columns, 'Naive Bayes')
