@@ -30,7 +30,7 @@ os.makedirs(results_dir, exist_ok=True)
 # set parameters
 #=========================================
 FEATURE_EXTRACTION_RADIOMICS = False
-FEATURE_EXTRACTION_DEEP = True
+FEATURE_EXTRACTION_DEEP = False
 
 data_path = r'D:\projects\pdac_reproducibility\PDACreproducibility'
 result_path = r'D:\projects\pdac_reproducibility\pdac_reproducibility\results'
@@ -72,6 +72,59 @@ def save_excel_sheet(df, filepath, sheetname, index=False):
 
 
 def main():
+    # =========================================================
+    # Radiomics Feature Extraction
+    # =========================================================
+    if FEATURE_EXTRACTION_RADIOMICS:
+        cases = os.listdir(image_dir)
+        liver_features = []
+        panc_features = []
+
+        for case in cases:
+            print(f"Processing {case}...")
+            try:
+                case_folder = os.path.join(image_dir, case)
+                nifti_files = os.listdir(case_folder)
+                ct_file = [f for f in nifti_files if f.startswith("DICOM") and f.endswith('nii')][0]
+                liver_file = [f for f in nifti_files if f.startswith("liver")][0]
+                panc_file = [f for f in nifti_files if f.startswith("pancreas")][0]
+                ct_path = os.path.join(case_folder, ct_file)
+                liver_path = os.path.join(case_folder, liver_file)
+                panc_path = os.path.join(case_folder, panc_file)
+
+                if not os.path.exists(liver_path):
+                    print(f"file {liver_path} don't exist..!")
+                    continue
+                elif not os.path.exists(panc_path):
+                    print(f"file {panc_path} don't exist..!")
+                    continue
+                elif not os.path.exists(ct_path):
+                    print(f"file {ct_path} don't exist..!")
+                    continue
+                else:
+                    try:
+                        l_features = extract_radiomics_features(ct_path, liver_path, params_path)
+                        liver_features_row = {'CaseNo': case}
+                        liver_features_row.update(l_features)
+                        liver_features.append(liver_features_row)
+
+                        p_features = extract_radiomics_features(ct_path, panc_path, params_path)
+                        panc_features_row = {'CaseNo': case}
+                        panc_features_row.update(p_features)
+                        panc_features.append(panc_features_row)
+                    except Exception as e:
+                        print(f"Case {case} couldn't be processed because: ", e)
+
+            except Exception as e1:
+                print(f"Case {case} couldn't be processed because: ", e1)
+
+        df1 = pd.DataFrame(liver_features)
+        df2 = pd.DataFrame(panc_features)
+        writer = pd.ExcelWriter('radiomics_features.xlsx', engine='xlsxwriter')
+        df1.to_excel(writer, sheet_name='liver_dl_features', index=False)
+        df2.to_excel(writer, sheet_name='pancreas_dl_features', index=False)
+        writer.close()
+
     # =========================================================
     # Deep Feature Extraction
     # =========================================================
