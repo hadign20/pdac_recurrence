@@ -1,23 +1,198 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="2aae3760-8195-44a4-bf88-57f0de05af87" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/pdac_recurrence.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/feature_importance_Logistic Regression.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/feature_importance_Random Forest.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/logreg_model.joblib" beforeDir="false" />
+    <list default="true" id="20a33343-6f76-484a-9035-4319ef2ebcd3" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/pdac_recurrence.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/pdac_recurrence.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/metrics_table.csv" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/nb_model.joblib" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/results/roc_curve_all_models.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/rf_model.joblib" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/svm_model.joblib" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_1/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_1/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_1/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_1/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_1/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_1/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_1/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_1/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_1/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_2/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_2/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_2/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_2/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_2/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_2/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_2/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_2/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_1_2/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_1/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_1/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_1/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_1/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_1/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_1/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_1/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_1/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_1/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_2/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_2/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_2/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_2/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_2/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_2/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_2/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_2/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_2_2/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_1/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_1/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_1/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_1/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_1/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_1/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_1/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_1/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_1/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_2/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_2/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_2/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_2/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_2/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_2/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_2/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_2/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_3_2/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_4_1/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_4_1/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_4_1/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_4_1/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_4_1/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_4_1/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_4_1/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_4_1/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTextureLiverMedian_4_1/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_1/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_1/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_1/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_1/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_1/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_1/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_1/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_1/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_1/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_2/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_2/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_2/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_2/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_2/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_2/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_2/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_2/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_2/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_3/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_3/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_3/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_3/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_3/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_3/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_3/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_3/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_1_3/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_1/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_1/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_1/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_1/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_1/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_1/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_1/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_1/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_1/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_2/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_2/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_2/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_2/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_2/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_2/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_2/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_2/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_2/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_3/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_3/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_3/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_3/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_3/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_3/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_3/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_3/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_2_3/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_1/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_1/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_1/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_1/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_1/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_1/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_1/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_1/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_1/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_2/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_2/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_2/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_2/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_2/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_2/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_2/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_2/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_2/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_3/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_3/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_3/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_3/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_3/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_3/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_3/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_3/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_3_3/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_2/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_2/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_2/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_2/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_2/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_2/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_2/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_2/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_2/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_3/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_3/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_3/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_3/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_3/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_3/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_3/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_3/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_3/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_4/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_4/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_4/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_4/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_4/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_4/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_4/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_4/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_4/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_5/confusion_matrix_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_5/confusion_matrix_Naive Bayes.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_5/confusion_matrix_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_5/confusion_matrix_SVM.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_5/corr_heatmap.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_5/feature_importance_Logistic Regression.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_5/feature_importance_Random Forest.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_5/metrics_table.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/results/JayaTexturePancreasMedian_4_5/roc_curve_all_models.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/feature_extraction/deep_features.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/feature_extraction/deep_features.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/feature_selection/feature_selection.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/feature_selection/feature_selection.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/model/model_building.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/model/model_building.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -28,37 +203,60 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 8
+  "associatedIndex": 4
 }]]></component>
-  <component name="ProjectId" id="2jn3J0NYK120FzopAxdWlbBbFUW" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectId" id="2kFBngpVXjJo9TGKBXVsu5sT72s" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "Python.deep_features.executor": "Run",
+    "Python.main.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "main"
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "C:/Users/ghahreh/AppData/Local/anaconda3/Scripts/conda.exe",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
   }
 }]]></component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-python-sdk-7a29c1521ef0-d3b881c8e49f-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-233.11799.298" />
+        <option value="bundled-python-sdk-975db3bf15a3-31b6be0877a2-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-241.18034.82" />
       </set>
     </attachedChunks>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
-      <changelist id="2aae3760-8195-44a4-bf88-57f0de05af87" name="Changes" comment="" />
-      <created>1722008937217</created>
+      <changelist id="20a33343-6f76-484a-9035-4319ef2ebcd3" name="Changes" comment="" />
+      <created>1722869612842</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1722008937217</updated>
+      <updated>1722869612842</updated>
     </task>
     <servers />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/main.py</url>
+          <line>15</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/main.py</url>
+          <line>5</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/feature_extraction/deep_features.py</url>
+          <line>103</line>
+          <option name="timeStamp" value="10" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

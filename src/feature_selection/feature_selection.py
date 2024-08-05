@@ -103,7 +103,7 @@ def calculate_auc_values(df: pd.DataFrame,
             try:
                 fpr, tpr, _ = roc_curve(df[outcome_column], normalized_feature_values)
                 roc_auc = auc(fpr, tpr)
-                auc_values[column] = roc_auc
+                auc_values[column] = roc_auc if roc_auc >= 0.5 else (1 - roc_auc)
             except ValueError:
                 auc_values[column] = np.nan
         else:

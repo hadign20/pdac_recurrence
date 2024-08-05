@@ -128,7 +128,7 @@ def hyperparameter_tuning(clf, param_grid, X_train, y_train, name):
 def train_test_split_evaluation(X, y,
                       test_size=0.3,
                       random_state=42,
-                      tuning=True):
+                      tuning=False):
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
     classifiers = get_classifiers()
@@ -137,19 +137,21 @@ def train_test_split_evaluation(X, y,
     test_results = {}
 
     for classifier_name, (clf, param_grid) in classifiers.items():
-        tuned_clf = hyperparameter_tuning(clf, param_grid, X_train, y_train, classifier_name)
-        tuned_clf.fit(X_train, y_train)
+        if tuning:
+            clf = hyperparameter_tuning(clf, param_grid, X_train, y_train, classifier_name)
 
-        y_pred_train = tuned_clf.predict(X_train)
-        y_pred_prob_train = tuned_clf.predict_proba(X_train)[:, 1] if hasattr(tuned_clf, "predict_proba") else None
+        clf.fit(X_train, y_train)
+
+        y_pred_train = clf.predict(X_train)
+        y_pred_prob_train = clf.predict_proba(X_train)[:, 1] if hasattr(clf, "predict_proba") else None
         metrics_train, ci_train = compute_metrics(y_train, y_pred_train, y_pred_prob_train)
         train_results[classifier_name] = {
             'metrics': metrics_train,
             'confidence_intervals': ci_train
         }
 
-        y_pred_test = tuned_clf.predict(X_test)
-        y_pred_prob_test = tuned_clf.predict_proba(X_test)[:, 1] if hasattr(tuned_clf, "predict_proba") else None
+        y_pred_test = clf.predict(X_test)
+        y_pred_prob_test = clf.predict_proba(X_test)[:, 1] if hasattr(clf, "predict_proba") else None
         metrics_test, ci_test = compute_metrics(y_test, y_pred_test, y_pred_prob_test)
         test_results[classifier_name] = {
             'metrics': metrics_test,
@@ -163,7 +165,7 @@ def train_test_split_evaluation(X, y,
 
         # Plot feature importance for tree-based models
         if classifier_name == 'RandomForest':
-            plot_feature_importance(tuned_clf.feature_importances_, X.columns, 'Feature Importance',
+            plot_feature_importance(clf.feature_importances_, X.columns, 'Feature Importance',
                                     'feature_importance.png')
 
     results['train'] = train_results
