@@ -175,7 +175,7 @@ def train_test_split_evaluation(X, y,
 
 
 
-def cross_validation_evaluation(X, y, cv_folds=5, tuning=True):
+def cross_validation_evaluation(X, y, cv_folds=5, tuning=False):
     """
     Perform cross-validation and evaluate models.
 
