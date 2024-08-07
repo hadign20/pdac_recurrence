@@ -247,7 +247,9 @@ from collections import defaultdict
 from typing import List, Optional
 from openpyxl import load_workbook
 from sklearn.model_selection import cross_val_score, StratifiedKFold
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, LassoCV
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 def calculate_p_values(df: pd.DataFrame,
                        outcome_column: str,
@@ -310,6 +312,48 @@ def calculate_p_values(df: pd.DataFrame,
     return p_values_df
 
 
+def calculate_p_values_CV(df: pd.DataFrame,
+                          outcome_column: str,
+                          categorical_columns: List[str] = [],
+                          exclude_columns: List[str] = [],
+                          test_numeric: Optional[str] = 'wilcox',
+                          test_categorical: Optional[str] = 'fisher',
+                          cv_folds: int = 5) -> pd.DataFrame:
+    """
+    Calculate p-values for each feature in the dataframe compared to the outcome variable using cross-validation.
+
+    :param df: DataFrame containing features and the outcome variable.
+    :param outcome_column: The name of the outcome column.
+    :param categorical_columns: List of names of categorical feature columns.
+    :param exclude_columns: List of columns to exclude from the analysis.
+    :param test_numeric: Statistical test to use for numeric features ('ttest' or 'wilcox').
+    :param test_categorical: Statistical test to use for categorical features ('fisher' or 'chi2').
+    :param cv_folds: Number of cross-validation folds.
+    :return: DataFrame with features and their average p-values across the CV folds.
+    """
+    print("Selecting best features defined by cross-validation with the p-value method.")
+
+    kf = KFold(n_splits=cv_folds)
+    feature_pvalue_avg = defaultdict(float)
+    p_values_count = defaultdict(int)
+
+    for train_index, val_index in kf.split(df):
+        train_fold, val_fold = df.iloc[train_index], df.iloc[val_index]
+        p_values_fold_df = calculate_p_values(train_fold, outcome_column, categorical_columns, exclude_columns,
+                                              test_numeric, test_categorical)
+
+        for _, row in p_values_fold_df.iterrows():
+            feature = row['Feature']
+            p_value = row['P_Value']
+            feature_pvalue_avg[feature] += p_value
+            p_values_count[feature] += 1
+
+    # Calculate average p-values
+    p_values_avg = {feature: feature_pvalue_avg[feature] / p_values_count[feature] for feature in feature_pvalue_avg}
+
+    p_values_avg_df = pd.DataFrame(list(p_values_avg.items()), columns=['Feature', 'P_Value'])
+    p_values_avg_df = p_values_avg_df.sort_values(by=['P_Value'], ascending=True)
+    return p_values_avg_df
 
 
 
@@ -441,10 +485,54 @@ def MRMR_feature_count(df: pd.DataFrame,
     return mrmr_count_df
 
 
+def lasso_feature_selection(df: pd.DataFrame, outcome_column: str, exclude_columns: List[str] = [],
+                            alphas: List[float] = [0.1, 1.0, 10.0]) -> pd.DataFrame:
+    x = df.loc[:, ~df.columns.isin(exclude_columns + [outcome_column])]
+    y = df[outcome_column]
+
+    # Normalize the features
+    scaler = StandardScaler()
+    x_scaled = scaler.fit_transform(x)
+
+    # Perform LassoCV with a range of alphas
+    lasso = LassoCV(alphas=alphas, cv=5).fit(x_scaled, y)
+
+    # Select features where coefficients are not zero
+    selected_features = x.columns[lasso.coef_ != 0]
+    lasso_df = pd.DataFrame(list(selected_features), columns=['Feature'])
+    lasso_df['Lasso_Coefficient'] = lasso.coef_[lasso.coef_ != 0]
+    lasso_df = lasso_df.sort_values(by='Lasso_Coefficient', ascending=False)
+
+    return lasso_df
+
+
+def pca_feature_selection(df: pd.DataFrame, outcome_column: str, exclude_columns: List[str] = [], n_components: int = 2) -> pd.DataFrame:
+    print("Selecting best features defined by PCA method.")
+    exclude_columns = [col for col in exclude_columns if col not in [df.columns[0], outcome_column]]
+
+    # Separate features and outcome
+    x = df.loc[:, ~df.columns.isin(exclude_columns + [outcome_column])]
+    y = df[outcome_column]
+
+    # Perform PCA
+    pca = PCA(n_components=n_components)
+    pca_features = pca.fit_transform(x.drop(columns=[x.columns[0]]))  # Dropping CaseNo for PCA
+
+    # Create a DataFrame with the PCA components
+    pca_df = pd.DataFrame(pca_features, columns=[f'PC{i + 1}' for i in range(n_components)])
+
+    # Add CaseNo and outcome_column back to the DataFrame
+    pca_df.insert(0, x.columns[0], x[x.columns[0]])
+    pca_df[outcome_column] = y.values
+
+    return pca_df
+
+
 
 def calculate_feature_scores(p_values_df: pd.DataFrame,
                           auc_values_df: pd.DataFrame,
                           mrmr_count_df: pd.DataFrame,
+                          lasso_values_df: pd.DataFrame,
                           results_dir: str):
     """
     factor in p-value, AUC, and MRMR count simultaneously,
@@ -465,13 +553,21 @@ def calculate_feature_scores(p_values_df: pd.DataFrame,
             auc_values_df['AUC'].max() - auc_values_df['AUC'].min())
     normalized_df['Normalized_MRMR_Count'] = (mrmr_count_df['MRMR_Count'] - mrmr_count_df['MRMR_Count'].min()) / (
             mrmr_count_df['MRMR_Count'].max() - mrmr_count_df['MRMR_Count'].min())
+    normalized_df['Normalized_Lasso'] = (lasso_values_df['Lasso_Coefficient'] - lasso_values_df['Lasso_Coefficient'].min()) / (
+            lasso_values_df['Lasso_Coefficient'].max() - lasso_values_df['Lasso_Coefficient'].min())
 
     # Assign weights to each metric
-    w_p_value = 0.2
-    w_auc = 0.4
+    w_p_value = 0.4
+    w_auc = 0.2
     w_mrmr_count = 0.4
+    w_lasso = 0.0
 
     # Calculate composite score
+    # normalized_df['Composite_Score'] = (w_p_value * (1 - normalized_df['Normalized_P_Value']) +
+    #                                     w_auc * normalized_df['Normalized_AUC'] +
+    #                                     w_mrmr_count * normalized_df['Normalized_MRMR_Count'] +
+    #                                     w_lasso * normalized_df['Normalized_Lasso'])
+
     normalized_df['Composite_Score'] = (w_p_value * (1 - normalized_df['Normalized_P_Value']) +
                                         w_auc * normalized_df['Normalized_AUC'] +
                                         w_mrmr_count * normalized_df['Normalized_MRMR_Count'])
@@ -497,6 +593,7 @@ def calculate_feature_scores(p_values_df: pd.DataFrame,
 def save_feature_analysis(p_values_df: pd.DataFrame,
                           auc_values_df: pd.DataFrame,
                           mrmr_count_df: pd.DataFrame,
+                          lasso_values_df: pd.DataFrame,
                           composite_df: pd.DataFrame,
                           results_dir: str):
     """
@@ -508,8 +605,13 @@ def save_feature_analysis(p_values_df: pd.DataFrame,
     :param composite_df: DF of selected features by combination.
     :param results_dir: Path to reulsts directory.
     """
-    analysis_df = p_values_df.merge(auc_values_df, on='Feature').merge(mrmr_count_df, on='Feature').merge(composite_df, on='Feature')
-    analysis_df = analysis_df.sort_values(by=['Composite_Score', 'AUC', 'P_Value', 'MRMR_Count'], ascending=[False, False, True, False])
+    #analysis_df = p_values_df.merge(auc_values_df, on='Feature').merge(mrmr_count_df, on='Feature').merge(composite_df, on='Feature').merge(lasso_values_df, on='Feature')
+    #analysis_df = analysis_df.sort_values(by=['Composite_Score', 'AUC', 'P_Value', 'MRMR_Count', 'Lasso_Coefficient'], ascending=[False, False, True, False, False])
+
+    analysis_df = p_values_df.merge(auc_values_df, on='Feature').merge(mrmr_count_df, on='Feature').merge(composite_df,
+                                                                                                          on='Feature')
+    analysis_df = analysis_df.sort_values(by=['Composite_Score', 'AUC', 'P_Value', 'MRMR_Count'],
+                                          ascending=[False, False, True, False])
 
     #output_dir = os.path.join(results_dir, "feature_analysis")
     #os.makedirs(output_dir, exist_ok=True)

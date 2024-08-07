@@ -6,7 +6,6 @@ from src.feature_selection.feature_selection import *
 from src.model.model_building import evaluate_models, save_classification_results
 from src.feature_extraction.radiomics_features import extract_radiomics_features
 from src.feature_extraction.deep_features import extract_deep_features
-import faulthandler
 
 
 
@@ -53,7 +52,7 @@ CV_FOLDS_RADIOMICS = 5
 HYPERPARAMETER_TUNING_RADIOMICS = False
 
 #================================
-DEEP_LEANING = True
+DEEP_LEANING = False
 FEATURE_EXTRACTION_DEEP = False
 dl_model_name = 'resnet50'  # ('vgg16', 'densenet121')
 
@@ -61,18 +60,24 @@ FEATURE_CORRELATION_DL = True
 CORR_THRESH_DL = 0.8
 
 FEATURE_SELECTION_DL = True
-FEATURE_SELECTION_METHOD_DL = 'auc' # 'mrmr', 'pvalue', 'auc', 'composite'
+FEATURE_SELECTION_METHOD_DL = 'composite' # 'mrmr', 'pvalue', 'auc', 'lasso', 'pca', 'composite'
 min_num_features_dl = 1
 max_num_features_dl = 20
 
 MODEL_BUILDING_DL = True
-EVALUATION_METHOD_DL = 'cross_validation' # 'train_test_split' or 'cross_validation'
+EVALUATION_METHOD_DL = 'train_test_split' # 'train_test_split' or 'cross_validation'
 TEST_SIZE_DL = 0.3
 CV_FOLDS_DL = 5
 HYPERPARAMETER_TUNING_DL = False
 
 
-
+#================================
+COMBINE = True
+MODEL_BUILDING_COMBINED = True
+EVALUATION_METHOD_COMBINED = 'train_test_split' # 'train_test_split' or 'cross_validation'
+TEST_SIZE_COMBINED = 0.3
+CV_FOLDS_COMBINED = 5
+HYPERPARAMETER_TUNING_COMBINED = False
 
 #=========================================
 # functions
@@ -348,16 +353,17 @@ def main():
                     print("\n======================================================================")
                     print(f"Performing feature analysis for sheet {sheet}")
                     print("======================================================================")
-                    p_values_df = calculate_p_values(df, outcome_column, categorical_columns, exclude_columns)
-                    auc_values_df = calculate_auc_values_CV(df, outcome_column, categorical_columns,
-                                                            exclude_columns)
-                    mrmr_df = MRMR_feature_count(df, outcome_column, categorical_columns, exclude_columns,
-                                                 max_num_features_dl, CV_FOLDS_DL)
-                    composite_df = calculate_feature_scores(p_values_df, auc_values_df, mrmr_df, result_dir)
+                    p_values_df = calculate_p_values_CV(df, outcome_column, categorical_columns, exclude_columns)
+                    auc_values_df = calculate_auc_values_CV(df, outcome_column, categorical_columns, exclude_columns)
+                    mrmr_df = MRMR_feature_count(df, outcome_column, categorical_columns, exclude_columns, max_num_features_dl, CV_FOLDS_DL)
+                    lasso_df = lasso_feature_selection(df, outcome_column, exclude_columns)
+                    composite_df = calculate_feature_scores(p_values_df, auc_values_df, mrmr_df, lasso_df, result_dir)
 
-                    save_feature_analysis(p_values_df, auc_values_df, mrmr_df, composite_df, result_dir)
+
+                    save_feature_analysis(p_values_df, auc_values_df, mrmr_df, composite_df, lasso_df, result_dir)
 
                     df_copy = df.copy()
+                    pca_df = pd.DataFrame()
 
                     for num_features in range(min_num_features_dl, max_num_features_dl + 1):
                         print("\n======================================================================")
@@ -374,15 +380,37 @@ def main():
                         elif FEATURE_SELECTION_METHOD_DL == 'auc':
                             selected_features = auc_values_df['Feature'][:num_features].tolist()
                             print(f"{num_features} features were selected by using auc method")
+                        elif FEATURE_SELECTION_METHOD_DL == 'lasso':
+                            selected_features = lasso_df['Feature'][:num_features].tolist()
+                            print(f"{num_features} features were selected by using lasso method")
+                        elif FEATURE_SELECTION_METHOD_DL == 'pca':
+                            max_components = min(df.shape[0], df.shape[1] - len(exclude_columns) - 1)
+                            if num_features > max_components:
+                                print(
+                                    f"Requested number of PCA components {num_features} is more than the maximum allowed {max_components}.")
+                                continue
+                            pca_df = pca_feature_selection(df, outcome_column, exclude_columns,
+                                                           n_components=num_features)
+                            sheetname = f"{num_features}_features"
+                            output_file = os.path.join(results_dir, 'pca_features.xlsx')
+                            save_excel_sheet(pca_df, output_file, sheetname)
+                            print(f"Features were reduced to {num_features} by using PCA method")
                         elif FEATURE_SELECTION_METHOD_DL == 'composite':
                             selected_features = composite_df['Feature'][:num_features].tolist()
                             print(
                                 f"{num_features} features were selected by a composite of p_value, AUC, and MRMR method")
                         else:
                             raise ValueError(
-                                "FEATURE_SELECTION_METHOD is not correct. It should be 'mrmr', 'pvalue', 'auc', or 'composite'")
+                                "FEATURE_SELECTION_METHOD_DL is not correct. It should be 'mrmr', 'pvalue', 'auc', 'lasso', 'pca', or 'composite'")
 
-                        df = df_copy[exclude_columns + selected_features + [outcome_column]]
+
+
+
+                        df_reduced = pd.DataFrame()
+                        if FEATURE_SELECTION_METHOD_DL == 'pca':
+                            df_reduced = pca_df
+                        else:
+                            df_reduced = df_copy[exclude_columns + selected_features + [outcome_column]]
 
                         # =========================================
                         # Model building and evaluation
@@ -396,8 +424,8 @@ def main():
                             print(
                                 f"Training and evaluating classification models for {num_features} feature(s) in sheet {sheet}")
                             print("======================================================================")
-                            X = df.loc[:, ~df.columns.isin(exclude_columns + [outcome_column])]
-                            y = df[outcome_column]
+                            X = df_reduced.loc[:, ~df_reduced.columns.isin(exclude_columns + [outcome_column])]
+                            y = df_reduced[outcome_column]
 
                             classification_results = evaluate_models(X, y, method=EVALUATION_METHOD_DL,
                                                                      **eval_kwargs)
@@ -407,20 +435,38 @@ def main():
                                                         num_features, method=EVALUATION_METHOD_DL)
 
                             # Record summary results
-                            for classifier, result in classification_results.items():
-                                result_entry = {
-                                    'Sheet': sheet,
-                                    'Num Features': num_features,
-                                    'Classifier': classifier,
-                                    'AUC': result['metrics']['roc_auc'],
-                                    'Sensitivity': result['metrics']['sensitivity'],
-                                    'Specificity': result['metrics']['specificity'],
-                                    'PPV': result['metrics']['ppv'],
-                                    'NPV': result['metrics']['npv']
-                                }
-                                summary_results.append(result_entry)
-                                if best_result is None or result['metrics']['roc_auc'] > best_result['AUC']:
-                                    best_result = result_entry
+                            if EVALUATION_METHOD_DL == "cross_validation":
+                                for classifier, result in classification_results.items():
+                                    result_entry = {
+                                        'Sheet': sheet,
+                                        'Num Features': num_features,
+                                        'Classifier': classifier,
+                                        'AUC': result['metrics']['roc_auc'],
+                                        'Sensitivity': result['metrics']['sensitivity'],
+                                        'Specificity': result['metrics']['specificity'],
+                                        'PPV': result['metrics']['ppv'],
+                                        'NPV': result['metrics']['npv']
+                                    }
+                                    summary_results.append(result_entry)
+                                    if best_result is None or result['metrics']['roc_auc'] > best_result['AUC']:
+                                        best_result = result_entry
+                            elif EVALUATION_METHOD_DL == "train_test_split":
+                                for dataset in classification_results.items():
+                                    if dataset[0] == "test":
+                                        for classifier, result in dataset[1].items():
+                                            result_entry = {
+                                                'Sheet': sheet,
+                                                'Num Features': num_features,
+                                                'Classifier': classifier,
+                                                'AUC': result['metrics']['roc_auc'],
+                                                'Sensitivity': result['metrics']['sensitivity'],
+                                                'Specificity': result['metrics']['specificity'],
+                                                'PPV': result['metrics']['ppv'],
+                                                'NPV': result['metrics']['npv']
+                                            }
+                                            summary_results.append(result_entry)
+                                            if best_result is None or result['metrics']['roc_auc'] > best_result['AUC']:
+                                                best_result = result_entry
 
             # Save summary results
             summary_df = pd.DataFrame(summary_results)
@@ -433,9 +479,46 @@ def main():
                     best_df = pd.DataFrame([best_result])
                     best_df.to_excel(writer, sheet_name='Best Result', index=False)
 
+    if COMBINE:
+        radiomics_features_num = 10
+        dl_features_num = 10
+        num_features = radiomics_features_num + dl_features_num
+
+        df_rad_f_ana = pd.read_excel(r'D:\projects\PDAC Recurrence\pdac_recurrence\results\Radiomics\JayaTextureLiverMedian\2_2\feature_analysis.xlsx')
+        df_dl_f_ana = pd.read_excel(r'D:\projects\PDAC Recurrence\pdac_recurrence\results\DL_with_radiomics_settings\HadiDLLiver\Sheet1\feature_analysis.xlsx')
+        df_rad_features = pd.read_excel(r'D:\projects\PDAC Recurrence\pdac_recurrence\data\JayaTextureLiverMedian.xlsx')
+        df_dl_features = pd.read_excel(r'D:\projects\PDAC Recurrence\pdac_recurrence\data\HadiDLLiver.xlsx')
+
+        top_rad_features = df_rad_f_ana['Feature'][:radiomics_features_num].tolist()
+        top_dl_features = df_dl_f_ana['Feature'][:dl_features_num].tolist()
+
+        selected_features = top_rad_features + top_dl_features
+
+        combined_df = pd.merge(df_rad_features[['CaseNo'] + top_rad_features + ['EarlyRecurrence']],
+                               df_dl_features[['CaseNo'] + top_dl_features + ['EarlyRecurrence']],
+                               on=('CaseNo', 'EarlyRecurrence'),
+                               suffixes=('_rad', '_dl'))
+
+        combined_df.to_excel(r'D:\projects\PDAC Recurrence\pdac_recurrence\results\combined_features.xlsx', index=False)
+
+        if MODEL_BUILDING_COMBINED:
+            eval_kwargs = {'test_size': TEST_SIZE_DL,
+                           'random_state': 42} if EVALUATION_METHOD_DL == 'train_test_split' else {
+                'cv_folds': CV_FOLDS_DL}
+
+            print("\n======================================================================")
+            print(f"Training and evaluating classification models for combined features")
+            print("======================================================================")
+            X = combined_df.loc[:, ~combined_df.columns.isin(exclude_columns + [outcome_column])]
+            y = combined_df[outcome_column]
+
+            classification_results = evaluate_models(X, y, method=EVALUATION_METHOD_COMBINED, **eval_kwargs)
+
+            classification_results_file = os.path.join(result_path, 'combined_model_evaluation_results.xlsx')
+            save_classification_results(classification_results, classification_results_file,
+                                        num_features, method=EVALUATION_METHOD_COMBINED)
 
 
 if __name__ == '__main__':
-    faulthandler.enable()
     main()
 
